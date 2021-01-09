@@ -1,4 +1,5 @@
 import logging
+from abc import abstractmethod
 from typing import List, Type, Optional, Dict, Any, Text
 
 from shpachatbot import utils
@@ -63,5 +64,6 @@ class Component(metaclass=ComponentMetaclass):
     ) -> "Component":
         return cls(component_config)
 
+    @abstractmethod
     def process(self, message: Message, **kwargs: Any) -> None:
-        ...
+        raise NotImplementedError
