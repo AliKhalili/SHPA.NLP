@@ -1,12 +1,13 @@
 from abc import abstractmethod
 from typing import Text, Any, Dict, List, Optional
 
-from shpachatbot.constants import MESSAGE_ATTRIBUTES, TOKENS_NAMES
+from shpachatbot.constants import MESSAGE_ATTRIBUTES, TOKENS_NAMES, TEXT
 from shpachatbot.nlu.components import Component
 from shpachatbot.nlu.message import Message
 
 
 class Token:
+
     def __init__(
             self,
             text: Text,
@@ -14,6 +15,7 @@ class Token:
     ) -> None:
         self.text = text
         self.data = data if data else {}
+        self.exclude_properties = [TOKENS_NAMES[TEXT]]
 
     def set(self, prop: Text, info: Any) -> None:
         self.data[prop] = info
@@ -24,7 +26,7 @@ class Token:
     def __repr__(self):
         props = []
         if self.data:
-            props = [f"{key}:'{value}'" for key, value in self.data.items()]
+            props = [f"{key}:'{value}'" for key, value in self.data.items() if key not in self.exclude_properties]
         return f"<Token text: '{self.text}'{' ,'.join(props)}>"
 
 
