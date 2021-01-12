@@ -1,32 +1,22 @@
 import logging
 from abc import abstractmethod
-from typing import List, Type, Optional, Dict, Any, Text
+from typing import List, Type, Optional, Dict, Any, Text, Tuple
 
-from shpachatbot import utils
+from pyrsistent import typing
+
 from shpachatbot.config import NLUModelConfig
-from shpachatbot.nlu.message import Message
+from shpachatbot.nlu.models import Message
 from shpachatbot.utils import override_defaults
 
 logger = logging.getLogger(__name__)
 
 
-class ComponentMetaclass(type):
-    """Metaclass with `name` class property."""
-
-    @property
-    def name(cls):
-        """The name property is a function of the class - its __name__."""
-
-        return cls.__name__
-
-
-class Component(metaclass=ComponentMetaclass):
-
+class Component:
     @property
     def name(self) -> Text:
         """Access the class's property name from an instance."""
 
-        return type(self).name
+        return type(self).__name__
 
     @classmethod
     def required_components(cls) -> List[Type["Component"]]:
@@ -51,8 +41,6 @@ class Component(metaclass=ComponentMetaclass):
         )
 
         self.component_config = NLUModelConfig(self.component_config)
-        self.partial_processing_pipeline = None
-        self.partial_processing_context = None
 
     @classmethod
     def required_packages(cls) -> List[Text]:
