@@ -1,0 +1,5 @@
+languge: "fa"
+pipeline:
+  - name: "HazmTokenizer"
+    alias: "convert"
+  - name: "HazmTokenizer"

@@ -1,8 +1,10 @@
 import os
-from typing import Optional
+from abc import abstractmethod
+from typing import Optional, List, Dict
 from bs4 import BeautifulSoup
 
 from shpachatbot.exceptions import SHPAException
+from shpachatbot.nlu.models import Message
 
 
 class HtmlFileNotFoundException(SHPAException):
@@ -68,6 +70,7 @@ class HtmlField:
 
 class HtmlParser:
     def __init__(self, html_path: str):
+        self.html_file_name = os.path.basename(html_path)
         self._html_content = get_file_content(html_path)
         self._soup = BeautifulSoup(self._html_content, "lxml")
         self._fields = {}
@@ -112,6 +115,14 @@ class HtmlParser:
         else:
             return selected
 
+    def parse_to_messages(self) -> List[Message]:
+        result = self.parse()
+        return self.to_message(result)
+
+    @abstractmethod
+    def to_message(self, doc: Dict) -> List[Message]:
+        ...
+
 
 class HmashahriParser(HtmlParser):
     def __init__(self, html_path: str):
@@ -120,6 +131,9 @@ class HmashahriParser(HtmlParser):
         # super().add_field(field_name='post_subtitle', css_selector='div.newstitle > h4.rutitr')
         super().add_field(field_name='post_content', css_selector='div.item-text')
 
+    def to_message(self, doc: Dict) -> List[Message]:
+        raise NotImplementedError
+
 
 class Way2PayParser(HtmlParser):
     def __init__(self, html_path: str):
@@ -127,20 +141,31 @@ class Way2PayParser(HtmlParser):
         super().add_field(field_name='post_badges', css_selector='div.post-header-title span.term-badge', is_multi=True)
         super().add_field(field_name='post_title', css_selector='h1.single-post-title')
         super().add_field(field_name='post_tags', css_selector='.post-tags a', is_multi=True)
-        # super().add_field(field_name='post_content', css_selector='.entry-content')
+        super().add_field(field_name='post_content', css_selector='div.single-post-content')
         super().add_field(field_name='post_date', css_selector='time.post-published', value_from='datetime')
 
+    def to_message(self, doc: Dict) -> List[Message]:
+        message = Message(text=doc['post_content'])
+        message['post_date'] = doc['post_date']
+        message['post_title'] = doc['post_title']
+        message['post_tags'] = doc['post_tags']
+        message['post_badges'] = doc['post_badges']
+        message['id'] = f'{type(self).__name__}_{self.html_file_name}'
+        return [message]
 
-if __name__ == "__main__":
-    # html_path_base = 'D:\\_temp\\crawler\\hamshahri'
-    # for file in os.listdir(html_path_base):
-    #     hamshahri_html = HmashahriParser(os.path.join(html_path_base, file))
-    #     fields = hamshahri_html.parse()
-    #     print(fields)
 
-    html_path_base = 'D:\\_temp\\crawler\\way2pay\\posts'
-    for file in os.listdir(html_path_base):
-        html_parser = Way2PayParser(os.path.join(html_path_base, file))
-        fields = html_parser.parse()
-        fields['id'] = file
-        print(fields)
+class MelliFaqParser(HtmlParser):
+    def __init__(self, html_path: str):
+        super(MelliFaqParser, self).__init__(html_path)
+        super().add_field(field_name='faq_question', css_selector='div.card-header a', is_multi=True)
+        super().add_field(field_name='faq_answer', css_selector='div.collapse div.card-body', is_multi=True)
+
+    def to_message(self, doc: Dict) -> List[Message]:
+        messages = []
+        for idx, (question, answer) in enumerate(zip(doc['faq_question'], doc['faq_answer'])):
+            message = Message(text=f"{question} {answer}")
+            message['question'] = question
+            message['answer'] = answer
+            message['id'] = f'{type(self).__name__}_{self.html_file_name}_{idx}'
+            messages.append(message)
+        return messages

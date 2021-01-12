@@ -3,8 +3,8 @@ import os
 from pathlib import Path
 from typing import Union, Text, Dict, Any, List
 
-import yaml
-from ruamel.yaml.constructor import DuplicateKeyError
+from ruamel import yaml as yaml
+from elasticsearch import Elasticsearch
 from yaml import YAMLError
 
 from shpachatbot.exceptions import YamlSyntaxException
@@ -78,7 +78,7 @@ def read_yaml_file(filename: Union[Text, Path]) -> Union[List[Any], Dict[Text, A
     """
     try:
         return read_yaml(read_file(filename, DEFAULT_ENCODING))
-    except {YAMLError, DuplicateKeyError} as e:
+    except YAMLError as e:
         raise YamlSyntaxException(filename, e)
 
 
@@ -119,3 +119,13 @@ def json_to_string(obj: Any, **kwargs: Any) -> Text:
     ensure_ascii = kwargs.pop("ensure_ascii", False)
     return json.dumps(obj, indent=indent, ensure_ascii=ensure_ascii, **kwargs)
 
+
+class ElasticStore:
+    def __init__(self, index="posts"):
+        self._index = index
+        self._es = Elasticsearch()
+
+    def dump_json(self, doc):
+        res = self._es.index(index=self._index, body=doc)
+        # The result of the indexing operation, created or updated.
+        return res['result']

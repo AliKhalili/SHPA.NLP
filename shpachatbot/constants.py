@@ -1,9 +1,4 @@
 TEXT = "text"
 
-MESSAGE_ATTRIBUTES = [
-    TEXT
-]
 
-TOKENS_NAMES = {
-    TEXT: "text_token"
-}
+TOKEN_ATTRIBUTE_STEM, TOKEN_ATTRIBUTE_LEMM, TOKEN_ATTRIBUTE_POS = "stem", "lemma", "pos"
